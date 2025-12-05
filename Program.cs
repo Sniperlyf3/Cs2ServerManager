@@ -26,7 +26,7 @@ await InstallSteamCmd();
 await InstallOrUpdateCS2();
 await InstallOrUpdateMetamod();
 await InstallOrUpdateCounterStrikeSharp();
-await InstallOrUpdatePlugin("B3none", "cs2-retakes", @"cs2-retakes-.*\..*\..*\.zip");
+//await InstallOrUpdatePlugin("B3none", "cs2-retakes", @"cs2-retakes-.*\..*\..*\.zip"); TODO: Need more setup, maybe we need a custom handler per plugin to determine which regexes are needed from the github and where they should go? Like a target directory enum?
 await InstallOrUpdatePlugin("B3none", "cs2-instaplant", @".*\.zip");
 await InstallOrUpdatePlugin("B3none", "cs2-instadefuse", @".*\.zip");
 //await InstallOrUpdatePlugin("Nereziel", "cs2-WeaponPaints", @"WeaponPaints\.zip"); TODO: Need more setup, including database, credentials, splitting of gamedata folder and other dependencies (maybe even website?)
