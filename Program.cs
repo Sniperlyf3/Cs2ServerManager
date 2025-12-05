@@ -91,7 +91,7 @@ async Task InstallOrUpdateCS2(bool validate = false)
 async Task InstallOrUpdateMetamod()
 {
     Console.WriteLine("[INFO] Installing Metamod:Source...");
-    string html = await http.GetStringAsync("https://www.metamodsource.net/downloads.php?branch=stable");
+    string html = await http.GetStringAsync("https://www.metamodsource.net/downloads.php?branch=master");
     var doc = new HtmlDocument();
     doc.LoadHtml(html);
     var links = doc.DocumentNode.SelectNodes("//a[contains(@class,'quick-download') and contains(@class,'download-link')]");
