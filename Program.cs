@@ -29,7 +29,7 @@ await InstallOrUpdateCounterStrikeSharp();
 await InstallOrUpdatePlugin("B3none", "cs2-retakes", @"cs2-retakes-.*\..*\..*\.zip");
 await InstallOrUpdatePlugin("B3none", "cs2-instaplant", @".*\.zip");
 await InstallOrUpdatePlugin("B3none", "cs2-instadefuse", @".*\.zip");
-await InstallOrUpdatePlugin("Nereziel", "cs2-WeaponPaints", @"WeaponPaints\.zip");
+//await InstallOrUpdatePlugin("Nereziel", "cs2-WeaponPaints", @"WeaponPaints\.zip"); TODO: Need more setup, including database, credentials, splitting of gamedata folder and other dependencies (maybe even website?)
 EnsureMetamodInGameInfo(gameInfoPath);
 EnsureSteamSymlinks();
 
