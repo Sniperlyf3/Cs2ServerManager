@@ -83,7 +83,7 @@ async Task InstallOrUpdateCS2(bool validate = false)
 {
     Console.WriteLine("[INFO] Installing/updating CS2 server...");
     string cmd =
-        $"+login anonymous +force_install_dir \"{ServerDir}\" +app_update 730 {(validate ? "validate" : "")}";
+        $"+force_install_dir \"{ServerDir}\" +login anonymous +app_update 730 {(validate ? "validate" : "")}";
     RunSteamCmd(cmd);
 }
 
