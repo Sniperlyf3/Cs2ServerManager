@@ -79,7 +79,7 @@ void RunSteamCmd(string arguments)
     }
 }
 
-async Task InstallOrUpdateCS2(bool validate = true)
+async Task InstallOrUpdateCS2(bool validate = false)
 {
     Console.WriteLine("[INFO] Installing/updating CS2 server...");
     string cmd =
