@@ -98,7 +98,7 @@ async Task InstallOrUpdateMetamod()
     if (links == null || links.Count == 0)
         throw new Exception("No download links found on Metamod:Source page.");
     string platform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "windows" : "linux";
-    string href = null;
+    string href = string.Empty;
     foreach (var link in links)
     {
         string url = link.GetAttributeValue("href", "");
