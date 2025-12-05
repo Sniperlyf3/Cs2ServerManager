@@ -128,7 +128,8 @@ async Task InstallOrUpdateMetamod()
 async Task InstallOrUpdateCounterStrikeSharp()
 {
     Console.WriteLine("[INFO] Installing CounterStrikeSharp...");
-    string zip = await DownloadLatestReleaseAsset("roflmuffin", "CounterStrikeSharp", "counterstrikesharp-with-runtime-windows-.*\\.zip");
+    string platform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "windows" : "linux";
+    string zip = await DownloadLatestReleaseAsset("roflmuffin", "CounterStrikeSharp", $"counterstrikesharp-with-runtime-{platform}-.*\\.zip");
     ZipFile.ExtractToDirectory(zip, ModsDir, true);
 }
 
