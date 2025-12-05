@@ -133,7 +133,7 @@ async Task InstallOrUpdateCounterStrikeSharp()
     ZipFile.ExtractToDirectory(zip, ModsDir, true);
 }
 
-async Task InstallOrUpdatePlugin(string owner, string repo, string assetPattern, string targetSubdir = "addons/CounterStrikeSharp/plugins")
+async Task InstallOrUpdatePlugin(string owner, string repo, string assetPattern, string targetSubdir = "addons/counterstrikesharp/plugins")
 {
     Console.WriteLine($"[INFO] Installing/updating plugin {owner}/{repo}...");
     string zip = await DownloadLatestReleaseAsset(owner, repo, assetPattern);
