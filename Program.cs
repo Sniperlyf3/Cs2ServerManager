@@ -23,11 +23,11 @@ Console.WriteLine($"[INFO] ModsDir {ModsDir}");
 await InstallSteamCmd();
 await InstallOrUpdateCS2();
 await InstallOrUpdateMetamod();
-await InstallOrUpdateCounterStrikeSharp();
-await InstallOrUpdatePlugin("B3none", "cs2-retakes", @"cs2-retakes-.*\..*\..*\.zip");
-await InstallOrUpdatePlugin("B3none", "cs2-instaplant", @".*\.zip");
-await InstallOrUpdatePlugin("B3none", "cs2-instadefuse", @".*\.zip");
-await InstallOrUpdatePlugin("Nereziel", "cs2-WeaponPaints", @"WeaponPaints\.zip");
+//await InstallOrUpdateCounterStrikeSharp();
+//await InstallOrUpdatePlugin("B3none", "cs2-retakes", @"cs2-retakes-.*\..*\..*\.zip");
+//await InstallOrUpdatePlugin("B3none", "cs2-instaplant", @".*\.zip");
+//await InstallOrUpdatePlugin("B3none", "cs2-instadefuse", @".*\.zip");
+//await InstallOrUpdatePlugin("Nereziel", "cs2-WeaponPaints", @"WeaponPaints\.zip");
 string gameInfoPath = Path.Combine(ServerDir, "game", "csgo", "gameinfo.gi");
 EnsureMetamodInGameInfo(gameInfoPath);
 
