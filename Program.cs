@@ -257,7 +257,6 @@ void InstallLinuxDependencies()
     Console.WriteLine("[INFO] Installing required Linux dependencies for SteamCMD and CS2...");
     RunCommand("sudo", "dpkg --add-architecture i386");
     RunCommand("sudo", "apt-get update");
-    RunCommand("sudo", "apt-get install -y lib32gcc1");
     string[] packages = new[]
     {
         "tmux",
