@@ -19,7 +19,9 @@ Directory.CreateDirectory(ModsDir);
 
 Console.WriteLine($"[INFO] Starting CS2 setup in {BaseDir}");
 Console.WriteLine($"[INFO] ModsDir {ModsDir}");
+string gameInfoPath = Path.Combine(ServerDir, "game", "csgo", "gameinfo.gi");
 
+InstallLinuxDependencies();
 await InstallSteamCmd();
 await InstallOrUpdateCS2();
 await InstallOrUpdateMetamod();
@@ -28,8 +30,8 @@ await InstallOrUpdatePlugin("B3none", "cs2-retakes", @"cs2-retakes-.*\..*\..*\.z
 await InstallOrUpdatePlugin("B3none", "cs2-instaplant", @".*\.zip");
 await InstallOrUpdatePlugin("B3none", "cs2-instadefuse", @".*\.zip");
 await InstallOrUpdatePlugin("Nereziel", "cs2-WeaponPaints", @"WeaponPaints\.zip");
-string gameInfoPath = Path.Combine(ServerDir, "game", "csgo", "gameinfo.gi");
 EnsureMetamodInGameInfo(gameInfoPath);
+EnsureSteamSymlinks();
 
 Console.WriteLine("[INFO] Setup complete. Edit GSLT in start script before launching.");
 await Task.Delay(-1);
@@ -186,4 +188,114 @@ void EnsureMetamodInGameInfo(string gameInfoPath)
     lines.Insert(index + 1, metamodLine);
     File.WriteAllLines(gameInfoPath, lines);
     Console.WriteLine("[INFO] Added Metamod line to gameinfo.gi");
+}
+
+void EnsureSteamSymlinks()
+{
+    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+    {
+        Console.WriteLine("[INFO] Skipping symlink creation (not Linux).");
+        return;
+    }
+
+    Console.WriteLine("[INFO] Ensuring Steam symlinks...");
+
+    string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+    string sdk64Dir = Path.Combine(home, ".steam", "sdk64");
+    string sdk32Dir = Path.Combine(home, ".steam", "sdk32");
+
+    Directory.CreateDirectory(sdk64Dir);
+    Directory.CreateDirectory(sdk32Dir);
+
+    string source64 = Path.Combine(SteamCmdDir, "linux64", "steamclient.so");
+    string target64 = Path.Combine(sdk64Dir, "steamclient.so");
+
+    string source32 = Path.Combine(SteamCmdDir, "linux32", "steamclient.so");
+    string target32 = Path.Combine(sdk32Dir, "steamclient.so");
+
+    CreateSymlink(source64, target64);
+    CreateSymlink(source32, target32);
+
+    Console.WriteLine("[INFO] Steam symlinks created.");
+}
+
+void CreateSymlink(string source, string target)
+{
+    if (File.Exists(target))
+    {
+        Console.WriteLine($"[INFO] Symlink already exists: {target}");
+        return;
+    }
+
+    var psi = new ProcessStartInfo
+    {
+        FileName = "ln",
+        Arguments = $"-s \"{source}\" \"{target}\"",
+        RedirectStandardOutput = true,
+        RedirectStandardError = true,
+        UseShellExecute = false
+    };
+
+    using var proc = Process.Start(psi);
+    proc?.WaitForExit();
+
+    if (proc?.ExitCode == 0)
+        Console.WriteLine($"[INFO] Created symlink: {target} -> {source}");
+    else
+        Console.WriteLine($"[ERROR] Failed to create symlink {target} -> {source}");
+}
+
+void InstallLinuxDependencies()
+{
+    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+    {
+        Console.WriteLine("[INFO] Skipping dependency installation (not Linux).");
+        return;
+    }
+
+    Console.WriteLine("[INFO] Installing required Linux dependencies for SteamCMD and CS2...");
+    RunCommand("sudo", "dpkg --add-architecture i386");
+    RunCommand("sudo", "apt-get update");
+    RunCommand("sudo", "apt-get install -y lib32gcc1");
+    string[] packages = new[]
+    {
+        "tmux",
+        "lib32gcc-s1",
+        "lib32stdc++6",
+        "libcurl4",
+        "zlib1g",
+        "libtinfo5"
+    };
+
+    RunCommand("sudo", $"apt-get install -y {string.Join(" ", packages)}");
+    Console.WriteLine("[INFO] Linux dependencies installed successfully.");
+}
+
+void RunCommand(string fileName, string arguments)
+{
+    var psi = new ProcessStartInfo
+    {
+        FileName = fileName,
+        Arguments = arguments,
+        RedirectStandardOutput = true,
+        RedirectStandardError = true,
+        UseShellExecute = false
+    };
+
+    using var proc = Process.Start(psi);
+    if (proc != null)
+    {
+        string stdout = proc.StandardOutput.ReadToEnd();
+        string stderr = proc.StandardError.ReadToEnd();
+        proc.WaitForExit();
+
+        if (!string.IsNullOrWhiteSpace(stdout))
+            Console.WriteLine(stdout);
+        if (!string.IsNullOrWhiteSpace(stderr))
+            Console.WriteLine(stderr);
+
+        if (proc.ExitCode != 0)
+            Console.WriteLine($"[ERROR] Command failed: {fileName} {arguments}");
+    }
 }
