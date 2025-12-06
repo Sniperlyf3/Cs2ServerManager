@@ -156,6 +156,7 @@ async Task InstallOrUpdateSkinsPlugin()
     ZipFile.ExtractToDirectory(zip, target, true);
     File.Copy(Path.Combine(target, "gamedata/weaponpaints.json"), Path.Combine(ModsDir, "addons/counterstrikesharp/gamedata/weaponpaints.json"));
     Directory.Move(Path.Combine(target, "WeaponPaints"), Path.Combine(ModsDir, "addons/counterstrikesharp/plugins/WeaponPaints"));
+    SetFollowServerGuidelinesFalse();
 }
 
 async Task InstallSkinsServer()
@@ -372,4 +373,55 @@ void Cleanup()
         Console.WriteLine($"[ERROR] Failed to delete downloaded files: {ex.Message}");
     }
     Console.WriteLine("[INFO] Cleanup complete.");
+}
+
+void SetFollowServerGuidelinesFalse()
+{
+    string configPath = Path.Combine(ModsDir, "addons", "counterstrikesharp", "config", "core.json");
+
+    if (!File.Exists(configPath))
+    {
+        Console.WriteLine("[WARN] core.json not found at " + configPath);
+        return;
+    }
+    try
+    {
+        string json = File.ReadAllText(configPath);
+        Console.WriteLine($"Original Config:\n{json}");
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        var dict = new Dictionary<string, object>();
+        foreach (var prop in root.EnumerateObject())
+        {
+            switch (prop.Value.ValueKind)
+            {
+                case JsonValueKind.String:
+                    dict[prop.Name] = prop.Value.GetString()!;
+                    break;
+                case JsonValueKind.Number:
+                    dict[prop.Name] = prop.Value.GetInt32();
+                    break;
+                case JsonValueKind.True:
+                case JsonValueKind.False:
+                    dict[prop.Name] = prop.Value.GetBoolean();
+                    break;
+                case JsonValueKind.Array:
+                    dict[prop.Name] = prop.Value.EnumerateArray().Select(v => v.GetString()).ToList();
+                    break;
+                default:
+                    dict[prop.Name] = prop.Value.ToString();
+                    break;
+            }
+        }
+        dict["FollowCS2ServerGuidelines"] = false;
+        var options = new JsonSerializerOptions { WriteIndented = true };
+        string updatedJson = JsonSerializer.Serialize(dict, options);
+        File.WriteAllText(configPath, updatedJson);
+        Console.WriteLine($"Updated Config:\n{updatedJson}");
+        Console.WriteLine("[INFO] Updated FollowCS2ServerGuidelines=false in core.json");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("[ERROR] Failed to update core.json: " + ex.Message);
+    }
 }
