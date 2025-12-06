@@ -9,7 +9,7 @@ namespace Setup
 {
     public class Setup
     {
-        public string Directory => Path.Combine(ServerDir, "game");
+        public string DirectoryPath => Path.Combine(ServerDir, "game");
         string BaseDir;
         string SteamCmdDir;
         string ServerDir;
