@@ -12,6 +12,7 @@ serviceManager.RemoveAllServicesWithPrefix();
 fsMmanager.RemoveAllOverlays();
 
 CreateServer("retakes-dust2", "Tokkelossie Retakes - Dust 2", "de_dust2");
+CreateServer("retakes-mirage", "Tokkelossie Retakes - Mirage", "mirage");
 
 void CreateServer(string serverName, string description, string map, string? gslt = null)
 {
