@@ -19,7 +19,7 @@ void CreateServer(string serverName, string description, string map, string? gsl
     var path = fsMmanager.CreateOverlay(serverName);
     var service = serviceManager.CreateServiceFile(serverName, path, gslt, portStart++, description, map);
     serviceManager.EnableService(serverName);
-    serviceManager.StartService(service);
+    serviceManager.StartService(serverName);
 }
 
 void RunCommand(string fileName, string arguments)
