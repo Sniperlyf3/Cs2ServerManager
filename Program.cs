@@ -28,7 +28,7 @@ await InstallOrUpdateCS2();
 await InstallOrUpdateMetamod();
 await InstallOrUpdateCounterStrikeSharp();
 await InstallOrUpdatePlugin("B3none", "cs2-retakes", @"cs2-retakes-\d*\.\d*\.\d*\.zip");
-await InstallOrUpdatePlugin("B3none", "cs2-retakes", @"cs2-retakes-shared-.*\.zip", "addons/counterstrikesharp/shared");
+await InstallOrUpdatePlugin("B3none", "cs2-retakes", @"cs2-retakes-shared-.*\.zip", "");
 await InstallOrUpdatePlugin("B3none", "cs2-instaplant", @".*\.zip");
 await InstallOrUpdatePlugin("B3none", "cs2-instadefuse", @".*\.zip");
 await InstallOrUpdatePlugin("oscar-wos", "Retakes-Zones", @"Zones\.zip");
