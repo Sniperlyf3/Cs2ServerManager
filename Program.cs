@@ -21,6 +21,7 @@ Console.WriteLine($"[INFO] Starting CS2 setup in {BaseDir}");
 Console.WriteLine($"[INFO] ModsDir {ModsDir}");
 string gameInfoPath = Path.Combine(ServerDir, "game", "csgo", "gameinfo.gi");
 
+Cleanup();
 InstallLinuxDependencies();
 await InstallSteamCmd();
 await InstallOrUpdateCS2();
@@ -299,4 +300,43 @@ void RunCommand(string fileName, string arguments)
         if (proc.ExitCode != 0)
             Console.WriteLine($"[ERROR] Command failed: {fileName} {arguments}");
     }
+}
+
+void Cleanup()
+{
+    Console.WriteLine("[INFO] Starting cleanup...");
+    string DownloadDir = BaseDir;
+    string addonsPath = Path.Combine(ModsDir, "addons");
+    if (Directory.Exists(addonsPath))
+    {
+        try
+        {
+            Directory.Delete(addonsPath, true);
+            Console.WriteLine($"[INFO] Deleted addons folder: {addonsPath}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR] Failed to delete addons folder: {ex.Message}");
+        }
+    }
+    else
+    {
+        Console.WriteLine("[INFO] No addons folder found to delete.");
+    }
+    try
+    {
+        var files = Directory.GetFiles(DownloadDir, "*.*", SearchOption.TopDirectoryOnly)
+            .Where(f => f.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ||
+                        f.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase));
+        foreach (var file in files)
+        {
+            File.Delete(file);
+            Console.WriteLine($"[INFO] Deleted file: {file}");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[ERROR] Failed to delete downloaded files: {ex.Message}");
+    }
+    Console.WriteLine("[INFO] Cleanup complete.");
 }
