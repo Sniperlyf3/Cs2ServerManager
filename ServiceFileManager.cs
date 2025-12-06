@@ -21,7 +21,7 @@ class ServiceFileManager
                            $"{(gslt != null ? $"+sv_setsteamaccount {gslt} " : "")}" +
                            $"-port {port} " +
                            $"+hostname \"{description}\"" +
-                           $"{(map != null ? $"+map {map}" : "")}";
+                           $"{(map != null ? $" +map {map}" : "")}";
 
         string serviceContent = $@"
             [Unit]
