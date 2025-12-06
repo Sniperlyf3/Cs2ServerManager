@@ -4,7 +4,6 @@ using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Xml;
 
 string BaseDir = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? @"C:\cs2" : "/opt/cs2";
 string SteamCmdDir = Path.Combine(BaseDir, "steamcmd");
