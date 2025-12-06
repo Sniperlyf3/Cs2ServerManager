@@ -31,7 +31,7 @@ await InstallOrUpdatePlugin("B3none", "cs2-retakes", @"cs2-retakes-\d*\.\d*\.\d*
 await InstallOrUpdatePlugin("B3none", "cs2-retakes", @"cs2-retakes-shared-.*\.zip", "");
 await InstallOrUpdatePlugin("B3none", "cs2-instaplant", @".*\.zip");
 await InstallOrUpdatePlugin("B3none", "cs2-instadefuse", @".*\.zip");
-await InstallOrUpdatePlugin("oscar-wos", "Retakes-Zones", @"Zones\.zip");
+await InstallOrUpdatePlugin("oscar-wos", "Retakes-Zones", @"Zones\.zip", "addons/counterstrikesharp");
 //await InstallOrUpdatePlugin("Nereziel", "cs2-WeaponPaints", @"WeaponPaints\.zip"); TODO: Need more setup, including database, credentials, splitting of gamedata folder and other dependencies (maybe even website?)
 EnsureMetamodInGameInfo(gameInfoPath);
 EnsureSteamSymlinks();
