@@ -32,7 +32,7 @@ await InstallOrUpdatePlugin("B3none", "cs2-retakes", @"cs2-retakes-shared-.*\.zi
 await InstallOrUpdatePlugin("B3none", "cs2-instaplant", @".*\.zip");
 await InstallOrUpdatePlugin("B3none", "cs2-instadefuse", @".*\.zip");
 await InstallOrUpdatePlugin("oscar-wos", "Retakes-Zones", @"Zones\.zip", "addons/counterstrikesharp");
-//await InstallOrUpdatePlugin("Nereziel", "cs2-WeaponPaints", @"WeaponPaints\.zip"); TODO: Need more setup, including database, credentials, splitting of gamedata folder and other dependencies (maybe even website?)
+await InstallOrUpdateSkinsPlugin();
 EnsureMetamodInGameInfo(gameInfoPath);
 EnsureSteamSymlinks();
 
@@ -129,7 +129,6 @@ async Task InstallOrUpdateMetamod()
     Console.WriteLine("[INFO] Metamod:Source installed.");
 }
 
-
 async Task InstallOrUpdateCounterStrikeSharp()
 {
     Console.WriteLine("[INFO] Installing CounterStrikeSharp...");
@@ -145,6 +144,16 @@ async Task InstallOrUpdatePlugin(string owner, string repo, string assetPattern,
     string target = Path.Combine(ModsDir, targetSubdir);
     Directory.CreateDirectory(target);
     ZipFile.ExtractToDirectory(zip, target, true);
+}
+
+async Task InstallOrUpdateSkinsPlugin()
+{
+    string zip = await DownloadLatestReleaseAsset("Nereziel", "cs2-WeaponPaints", @"WeaponPaints\.zip");
+    string target = Path.Combine(BaseDir, "temp");
+    Directory.CreateDirectory(target);
+    ZipFile.ExtractToDirectory(zip, target, true);
+    File.Copy(Path.Combine(target, "gamedata/weaponpaints.json"), Path.Combine(ModsDir, "addons/counterstrikesharp/gamedata/weaponpaints.json"));
+    Directory.Move(Path.Combine(target, "WeaponPaints"), Path.Combine(ModsDir, "addons/counterstrikesharp/plugins/WeaponPaints"));
 }
 
 async Task<string> DownloadLatestReleaseAsset(string owner, string repo, string assetRegex)
@@ -307,6 +316,7 @@ void Cleanup()
     Console.WriteLine("[INFO] Starting cleanup...");
     string DownloadDir = BaseDir;
     string addonsPath = Path.Combine(ModsDir, "addons");
+    string tempPath = Path.Combine(BaseDir, "temp");
     if (Directory.Exists(addonsPath))
     {
         try
@@ -322,6 +332,22 @@ void Cleanup()
     else
     {
         Console.WriteLine("[INFO] No addons folder found to delete.");
+    }
+    if (Directory.Exists(tempPath))
+    {
+        try
+        {
+            Directory.Delete(tempPath, true);
+            Console.WriteLine($"[INFO] Deleted temp folder: {tempPath}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR] Failed to delete temp folder: {ex.Message}");
+        }
+    }
+    else
+    {
+        Console.WriteLine("[INFO] No temp folder found to delete.");
     }
     try
     {
