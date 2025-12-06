@@ -1,0 +1,442 @@
+﻿using HtmlAgilityPack;
+using System.Diagnostics;
+using System.IO.Compression;
+using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+namespace Setup
+{
+    public class Setup
+    {
+        public string Directory => Path.Combine(ServerDir, "game");
+        string BaseDir;
+        string SteamCmdDir;
+        string ServerDir;
+        string ModsDir;
+        string gameInfoPath;
+        HttpClient http;
+
+        public Setup()
+        {
+            BaseDir = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? @"C:\cs2" : "/opt/cs2";
+            SteamCmdDir = Path.Combine(BaseDir, "steamcmd");
+            ServerDir = Path.Combine(BaseDir, "server");
+            ModsDir = Path.Combine(ServerDir, "game", "csgo");
+            gameInfoPath = Path.Combine(ServerDir, "game", "csgo", "gameinfo.gi");
+            http = new();
+        }
+
+        public async Task PerformBaseSetupAsync()
+        {
+            Directory.CreateDirectory(BaseDir);
+            Directory.CreateDirectory(SteamCmdDir);
+            Directory.CreateDirectory(ServerDir);
+            Directory.CreateDirectory(ModsDir);
+            Console.WriteLine($"[INFO] Starting CS2 setup in {BaseDir}");
+            Console.WriteLine($"[INFO] ModsDir {ModsDir}");
+
+            Cleanup();
+            InstallLinuxDependencies();
+            await InstallSteamCmd();
+            await InstallOrUpdateCS2();
+            await InstallOrUpdateMetamod();
+            await InstallOrUpdateCounterStrikeSharp();
+            await InstallOrUpdatePlugin("B3none", "cs2-retakes", @"cs2-retakes-\d*\.\d*\.\d*\.zip");
+            await InstallOrUpdatePlugin("B3none", "cs2-retakes", @"cs2-retakes-shared-.*\.zip", "");
+            await InstallOrUpdatePlugin("B3none", "cs2-instaplant", @".*\.zip");
+            await InstallOrUpdatePlugin("B3none", "cs2-instadefuse", @".*\.zip");
+            await InstallOrUpdatePlugin("oscar-wos", "Retakes-Zones", @"Zones\.zip", "addons/counterstrikesharp");
+            await InstallOrUpdatePlugin("NickFox007", "PlayerSettingsCS2", @"PlayerSettings\.zip", "");
+            await InstallOrUpdatePlugin("NickFox007", "AnyBaseLibCS2", @"AnyBaseLib\.zip", "");
+            await InstallOrUpdatePlugin("NickFox007", "MenuManagerCS2", @"MenuManager\.zip", "");
+            await InstallOrUpdateSkinsPlugin();
+            EnsureMetamodInGameInfo(gameInfoPath);
+            EnsureSteamSymlinks();
+
+            Console.WriteLine("[INFO] Setup complete. Edit GSLT in start script before launching.");
+        }
+
+        async Task InstallSteamCmd()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                string exePath = Path.Combine(SteamCmdDir, "steamcmd.exe");
+                if (!File.Exists(exePath))
+                {
+                    Console.WriteLine("[INFO] Downloading SteamCMD (Windows)...");
+                    var zipPath = Path.Combine(SteamCmdDir, "steamcmd.zip");
+                    var data = await http.GetByteArrayAsync("https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip");
+                    await File.WriteAllBytesAsync(zipPath, data);
+                    ZipFile.ExtractToDirectory(zipPath, SteamCmdDir, true);
+                }
+            }
+            else
+            {
+                string shPath = Path.Combine(SteamCmdDir, "steamcmd.sh");
+                if (!File.Exists(shPath))
+                {
+                    Console.WriteLine("[INFO] Downloading SteamCMD (Linux)...");
+                    var tarPath = Path.Combine(SteamCmdDir, "steamcmd_linux.tar.gz");
+                    var data = await http.GetByteArrayAsync("https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz");
+                    await File.WriteAllBytesAsync(tarPath, data);
+                    Process.Start("tar", $"-xzf {tarPath} -C {SteamCmdDir}")?.WaitForExit();
+                }
+            }
+        }
+
+        void RunSteamCmd(string arguments)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Process.Start(
+                    Path.Combine(SteamCmdDir, "steamcmd.exe"),
+                    $"{arguments} +quit"
+                )?.WaitForExit();
+            }
+            else
+            {
+                Process.Start(
+                    "bash",
+                    $"{Path.Combine(SteamCmdDir, "steamcmd.sh")} {arguments} +quit"
+                )?.WaitForExit();
+            }
+        }
+
+        async Task InstallOrUpdateCS2(bool validate = false)
+        {
+            Console.WriteLine("[INFO] Installing/updating CS2 server...");
+            string cmd =
+                $"+force_install_dir \"{ServerDir}\" +login anonymous +app_update 730 {(validate ? "validate" : "")}";
+            RunSteamCmd(cmd);
+        }
+
+
+        async Task InstallOrUpdateMetamod()
+        {
+            Console.WriteLine("[INFO] Installing Metamod:Source...");
+            string html = await http.GetStringAsync("https://www.metamodsource.net/downloads.php?branch=master");
+            var doc = new HtmlDocument();
+            doc.LoadHtml(html);
+            var links = doc.DocumentNode.SelectNodes("//a[contains(@class,'quick-download') and contains(@class,'download-link')]");
+            if (links == null || links.Count == 0)
+                throw new Exception("No download links found on Metamod:Source page.");
+            string platform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "windows" : "linux";
+            string href = string.Empty;
+            foreach (var link in links)
+            {
+                string url = link.GetAttributeValue("href", "");
+                if (url.Contains(platform, StringComparison.OrdinalIgnoreCase))
+                {
+                    href = url;
+                    break;
+                }
+            }
+            if (href == null)
+                throw new Exception($"No Metamod download link found for {platform}.");
+            string archivePath = Path.Combine(BaseDir, platform == "windows" ? "metamod.zip" : "metamod.tar.gz");
+            var data = await http.GetByteArrayAsync(href);
+            await File.WriteAllBytesAsync(archivePath, data);
+            if (platform == "windows")
+            {
+                ZipFile.ExtractToDirectory(archivePath, ModsDir, true);
+            }
+            else
+            {
+                Process.Start("tar", $"-xzf {archivePath} -C {ModsDir}")?.WaitForExit();
+            }
+            Console.WriteLine("[INFO] Metamod:Source installed.");
+        }
+
+        async Task InstallOrUpdateCounterStrikeSharp()
+        {
+            Console.WriteLine("[INFO] Installing CounterStrikeSharp...");
+            string platform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "windows" : "linux";
+            string zip = await DownloadLatestReleaseAsset("roflmuffin", "CounterStrikeSharp", $"counterstrikesharp-with-runtime-{platform}-.*\\.zip");
+            ZipFile.ExtractToDirectory(zip, ModsDir, true);
+        }
+
+        async Task InstallOrUpdatePlugin(string owner, string repo, string assetPattern, string targetSubdir = "addons/counterstrikesharp/plugins")
+        {
+            Console.WriteLine($"[INFO] Installing/updating plugin {owner}/{repo}...");
+            string zip = await DownloadLatestReleaseAsset(owner, repo, assetPattern);
+            string target = Path.Combine(ModsDir, targetSubdir);
+            Directory.CreateDirectory(target);
+            ZipFile.ExtractToDirectory(zip, target, true);
+        }
+
+        async Task InstallOrUpdateSkinsPlugin()
+        {
+            string zip = await DownloadLatestReleaseAsset("Nereziel", "cs2-WeaponPaints", @"WeaponPaints\.zip");
+            string target = Path.Combine(BaseDir, "temp");
+            Directory.CreateDirectory(target);
+            ZipFile.ExtractToDirectory(zip, target, true);
+            File.Copy(Path.Combine(target, "gamedata/weaponpaints.json"), Path.Combine(ModsDir, "addons/counterstrikesharp/gamedata/weaponpaints.json"));
+            Directory.Move(Path.Combine(target, "WeaponPaints"), Path.Combine(ModsDir, "addons/counterstrikesharp/plugins/WeaponPaints"));
+            SetFollowServerGuidelinesFalse();
+        }
+
+        async Task<string> DownloadLatestReleaseAsset(string owner, string repo, string assetRegex)
+        {
+            string api = $"https://api.github.com/repos/{owner}/{repo}/releases/latest";
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("cs2-updater");
+            var json = await http.GetStringAsync(api);
+            using var doc = JsonDocument.Parse(json);
+            foreach (var asset in doc.RootElement.GetProperty("assets").EnumerateArray())
+            {
+                string name = asset.GetProperty("name").GetString() ?? "";
+                string url = asset.GetProperty("browser_download_url").GetString() ?? "";
+                if (Regex.IsMatch(name, assetRegex))
+                {
+                    string outPath = Path.Combine(BaseDir, name);
+                    var data = await http.GetByteArrayAsync(url);
+                    await File.WriteAllBytesAsync(outPath, data);
+                    return outPath;
+                }
+            }
+            throw new Exception($"No asset matching {assetRegex} found for {owner}/{repo}");
+        }
+
+        void EnsureMetamodInGameInfo(string gameInfoPath)
+        {
+            if (!File.Exists(gameInfoPath))
+            {
+                Console.WriteLine("[WARN] gameinfo.gi not found at " + gameInfoPath);
+                return;
+            }
+            var lines = File.ReadAllLines(gameInfoPath).ToList();
+            string metamodLine = "\t\t\tGame    csgo/addons/metamod";
+            if (lines.Any(l => l.Trim().Equals(metamodLine.Trim(), StringComparison.OrdinalIgnoreCase)))
+            {
+                Console.WriteLine("[INFO] Metamod line already present in gameinfo.gi");
+                return;
+            }
+            int index = lines.FindIndex(l => l.Trim().StartsWith("Game_LowViolence", StringComparison.OrdinalIgnoreCase));
+            if (index == -1)
+            {
+                Console.WriteLine("[WARN] Could not find Game_LowViolence line in gameinfo.gi");
+                return;
+            }
+            lines.Insert(index + 1, metamodLine);
+            File.WriteAllLines(gameInfoPath, lines);
+            Console.WriteLine("[INFO] Added Metamod line to gameinfo.gi");
+        }
+
+        void EnsureSteamSymlinks()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                Console.WriteLine("[INFO] Skipping symlink creation (not Linux).");
+                return;
+            }
+
+            Console.WriteLine("[INFO] Ensuring Steam symlinks...");
+
+            string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+            string sdk64Dir = Path.Combine(home, ".steam", "sdk64");
+            string sdk32Dir = Path.Combine(home, ".steam", "sdk32");
+
+            Directory.CreateDirectory(sdk64Dir);
+            Directory.CreateDirectory(sdk32Dir);
+
+            string source64 = Path.Combine(SteamCmdDir, "linux64", "steamclient.so");
+            string target64 = Path.Combine(sdk64Dir, "steamclient.so");
+
+            string source32 = Path.Combine(SteamCmdDir, "linux32", "steamclient.so");
+            string target32 = Path.Combine(sdk32Dir, "steamclient.so");
+
+            CreateSymlink(source64, target64);
+            CreateSymlink(source32, target32);
+
+            Console.WriteLine("[INFO] Steam symlinks created.");
+        }
+
+        void CreateSymlink(string source, string target)
+        {
+            if (File.Exists(target))
+            {
+                Console.WriteLine($"[INFO] Symlink already exists: {target}");
+                return;
+            }
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = "ln",
+                Arguments = $"-s \"{source}\" \"{target}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            };
+
+            using var proc = Process.Start(psi);
+            proc?.WaitForExit();
+
+            if (proc?.ExitCode == 0)
+                Console.WriteLine($"[INFO] Created symlink: {target} -> {source}");
+            else
+                Console.WriteLine($"[ERROR] Failed to create symlink {target} -> {source}");
+        }
+
+        void InstallLinuxDependencies()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                Console.WriteLine("[INFO] Skipping dependency installation (not Linux).");
+                return;
+            }
+
+            Console.WriteLine("[INFO] Installing required Linux dependencies for SteamCMD and CS2...");
+            RunCommand("sudo", "dpkg --add-architecture i386");
+            RunCommand("sudo", "apt-get update");
+            string[] packages = new[]
+            {
+                "tmux",
+                "lib32gcc-s1",
+                "lib32stdc++6",
+                "libcurl4",
+                "zlib1g",
+                "libtinfo5"
+            };
+
+            RunCommand("sudo", $"apt-get install -y {string.Join(" ", packages)}");
+            Console.WriteLine("[INFO] Linux dependencies installed successfully.");
+        }
+
+        void RunCommand(string fileName, string arguments)
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            };
+
+            using var proc = Process.Start(psi);
+            if (proc != null)
+            {
+                string stdout = proc.StandardOutput.ReadToEnd();
+                string stderr = proc.StandardError.ReadToEnd();
+                proc.WaitForExit();
+
+                if (!string.IsNullOrWhiteSpace(stdout))
+                    Console.WriteLine(stdout);
+                if (!string.IsNullOrWhiteSpace(stderr))
+                    Console.WriteLine(stderr);
+
+                if (proc.ExitCode != 0)
+                    Console.WriteLine($"[ERROR] Command failed: {fileName} {arguments}");
+            }
+        }
+
+        void Cleanup()
+        {
+            Console.WriteLine("[INFO] Starting cleanup...");
+            string DownloadDir = BaseDir;
+            string addonsPath = Path.Combine(ModsDir, "addons");
+            string tempPath = Path.Combine(BaseDir, "temp");
+            if (Directory.Exists(addonsPath))
+            {
+                try
+                {
+                    Directory.Delete(addonsPath, true);
+                    Console.WriteLine($"[INFO] Deleted addons folder: {addonsPath}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[ERROR] Failed to delete addons folder: {ex.Message}");
+                }
+            }
+            else
+            {
+                Console.WriteLine("[INFO] No addons folder found to delete.");
+            }
+            if (Directory.Exists(tempPath))
+            {
+                try
+                {
+                    Directory.Delete(tempPath, true);
+                    Console.WriteLine($"[INFO] Deleted temp folder: {tempPath}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[ERROR] Failed to delete temp folder: {ex.Message}");
+                }
+            }
+            else
+            {
+                Console.WriteLine("[INFO] No temp folder found to delete.");
+            }
+            try
+            {
+                var files = Directory.GetFiles(DownloadDir, "*.*", SearchOption.TopDirectoryOnly)
+                    .Where(f => f.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ||
+                                f.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase));
+                foreach (var file in files)
+                {
+                    File.Delete(file);
+                    Console.WriteLine($"[INFO] Deleted file: {file}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Failed to delete downloaded files: {ex.Message}");
+            }
+            Console.WriteLine("[INFO] Cleanup complete.");
+        }
+
+        void SetFollowServerGuidelinesFalse()
+        {
+            string configPath = Path.Combine(ModsDir, "addons", "counterstrikesharp", "config", "core.json");
+
+            if (!File.Exists(configPath))
+            {
+                Console.WriteLine("[WARN] core.json not found at " + configPath);
+                return;
+            }
+            try
+            {
+                string json = File.ReadAllText(configPath);
+                Console.WriteLine($"Original Config:\n{json}");
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+                var dict = new Dictionary<string, object>();
+                foreach (var prop in root.EnumerateObject())
+                {
+                    switch (prop.Value.ValueKind)
+                    {
+                        case JsonValueKind.String:
+                            dict[prop.Name] = prop.Value.GetString()!;
+                            break;
+                        case JsonValueKind.Number:
+                            dict[prop.Name] = prop.Value.GetInt32();
+                            break;
+                        case JsonValueKind.True:
+                        case JsonValueKind.False:
+                            dict[prop.Name] = prop.Value.GetBoolean();
+                            break;
+                        case JsonValueKind.Array:
+                            dict[prop.Name] = prop.Value.EnumerateArray().Select(v => v.GetString()).ToList();
+                            break;
+                        default:
+                            dict[prop.Name] = prop.Value.ToString();
+                            break;
+                    }
+                }
+                dict["FollowCS2ServerGuidelines"] = false;
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                string updatedJson = JsonSerializer.Serialize(dict, options);
+                File.WriteAllText(configPath, updatedJson);
+                Console.WriteLine($"Updated Config:\n{updatedJson}");
+                Console.WriteLine("[INFO] Updated FollowCS2ServerGuidelines=false in core.json");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[ERROR] Failed to update core.json: " + ex.Message);
+            }
+        }
+
+    }
+}
