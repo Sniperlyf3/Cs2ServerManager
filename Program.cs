@@ -31,6 +31,9 @@ await InstallOrUpdatePlugin("B3none", "cs2-retakes", @"cs2-retakes-shared-.*\.zi
 await InstallOrUpdatePlugin("B3none", "cs2-instaplant", @".*\.zip");
 await InstallOrUpdatePlugin("B3none", "cs2-instadefuse", @".*\.zip");
 await InstallOrUpdatePlugin("oscar-wos", "Retakes-Zones", @"Zones\.zip", "addons/counterstrikesharp");
+await InstallOrUpdatePlugin("NickFox007", "PlayerSettingsCS2", @"PlayerSettings\.zip", "");
+await InstallOrUpdatePlugin("NickFox007", "AnyBaseLibCS2", @"AnyBaseLib\.zip", "");
+await InstallOrUpdatePlugin("NickFox007", "MenuManagerCS2", @"MenuManager\.zip", "");
 await InstallOrUpdateSkinsPlugin();
 EnsureMetamodInGameInfo(gameInfoPath);
 EnsureSteamSymlinks();
@@ -153,6 +156,11 @@ async Task InstallOrUpdateSkinsPlugin()
     ZipFile.ExtractToDirectory(zip, target, true);
     File.Copy(Path.Combine(target, "gamedata/weaponpaints.json"), Path.Combine(ModsDir, "addons/counterstrikesharp/gamedata/weaponpaints.json"));
     Directory.Move(Path.Combine(target, "WeaponPaints"), Path.Combine(ModsDir, "addons/counterstrikesharp/plugins/WeaponPaints"));
+}
+
+async Task InstallSkinsServer()
+{
+
 }
 
 async Task<string> DownloadLatestReleaseAsset(string owner, string repo, string assetRegex)
