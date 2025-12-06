@@ -16,7 +16,7 @@ class ServiceFileManager
         string serviceName = $"cs2-server-{name}.service";
         string servicePath = Path.Combine(ServiceDir, serviceName);
 
-        string execStart = $"{overlayPath}/cs2/bin/linuxsteamrt64/cs2 " +
+        string execStart = $"{overlayPath}/cs2.sh " +
                            $"-dedicated -console -usercon " +
                            $"{(gslt != null ? $"+sv_setsteamaccount {gslt} " : "")}" +
                            $"-port {port} " +
