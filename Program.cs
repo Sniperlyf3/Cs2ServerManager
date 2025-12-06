@@ -3,7 +3,7 @@
 Setup.Setup setup = new();
 await setup.PerformBaseSetupAsync();
 
-int portStart = 27015;
+int portStart = 2888;
 
 OverlayFsManager fsMmanager = new(setup.DirectoryPath, "/servers");
 ServiceFileManager serviceManager = new();
