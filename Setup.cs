@@ -68,7 +68,7 @@ namespace Setup
                     var zipPath = Path.Combine(SteamCmdDir, "steamcmd.zip");
                     var data = await http.GetByteArrayAsync("https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip");
                     await File.WriteAllBytesAsync(zipPath, data);
-                    ZipFile.ExtractToDirectory(zipPath, SteamCmdDir, true);
+                    ArchiveHelper.ExtractToDirectory(zipPath, SteamCmdDir, true);
                 }
             }
             else
@@ -139,7 +139,7 @@ namespace Setup
             await File.WriteAllBytesAsync(archivePath, data);
             if (platform == "windows")
             {
-                ZipFile.ExtractToDirectory(archivePath, ModsDir, true);
+                ArchiveHelper.ExtractToDirectory(archivePath, ModsDir, true);
             }
             else
             {
@@ -153,7 +153,7 @@ namespace Setup
             Console.WriteLine("[INFO] Installing CounterStrikeSharp...");
             string platform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "windows" : "linux";
             string zip = await DownloadLatestReleaseAsset("roflmuffin", "CounterStrikeSharp", $"counterstrikesharp-with-runtime-{platform}-.*\\.zip");
-            ZipFile.ExtractToDirectory(zip, ModsDir, true);
+            ArchiveHelper.ExtractToDirectory(zip, ModsDir, true);
         }
 
         async Task InstallOrUpdatePlugin(string owner, string repo, string assetPattern, string targetSubdir = "addons/counterstrikesharp/plugins")
@@ -162,7 +162,7 @@ namespace Setup
             string zip = await DownloadLatestReleaseAsset(owner, repo, assetPattern);
             string target = Path.Combine(ModsDir, targetSubdir);
             Directory.CreateDirectory(target);
-            ZipFile.ExtractToDirectory(zip, target, true);
+            ArchiveHelper.ExtractToDirectory(zip, target, true);
         }
 
         async Task InstallOrUpdateSkinsPlugin()
@@ -170,7 +170,7 @@ namespace Setup
             string zip = await DownloadLatestReleaseAsset("Nereziel", "cs2-WeaponPaints", @"WeaponPaints\.zip");
             string target = Path.Combine(BaseDir, "temp");
             Directory.CreateDirectory(target);
-            ZipFile.ExtractToDirectory(zip, target, true);
+            ArchiveHelper.ExtractToDirectory(zip, target, true);
             File.Copy(Path.Combine(target, "gamedata/weaponpaints.json"), Path.Combine(ModsDir, "addons/counterstrikesharp/gamedata/weaponpaints.json"));
             Directory.Move(Path.Combine(target, "WeaponPaints"), Path.Combine(ModsDir, "addons/counterstrikesharp/plugins/WeaponPaints"));
             SetFollowServerGuidelinesFalse();
